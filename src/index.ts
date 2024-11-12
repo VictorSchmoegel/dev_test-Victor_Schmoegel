@@ -3,6 +3,7 @@ import express from 'express';
 import { DataSource } from 'typeorm';
 import { User } from './entity/User';
 import { Post } from './entity/Post';
+import 'dotenv/config';
 
 const app = express();
 app.use(express.json());
@@ -34,11 +35,34 @@ const initializeDatabase = async () => {
 initializeDatabase();
 
 app.post('/users', async (req, res) => {
-// Crie o endpoint de users
+  const { firstName, lastName, email } = req.body;
+  try {
+    const userRepository = AppDataSource.getRepository(User);
+    const newUser = userRepository.create({ firstName, lastName, email });
+    await userRepository.save(newUser);
+    res.status(201).json(newUser);
+  } catch (error) {
+    console.error("Error creating a new user", error);
+    return res.status(500).json({ message: "Error creating user" });
+  }
 });
 
 app.post('/posts', async (req, res) => {
-// Crie o endpoint de posts
+  const { title, description, userId } = req.body;
+  try {
+    const userRepository = AppDataSource.getRepository(User);
+    const user = await userRepository.findOneBy({ id: userId });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const postRepository = AppDataSource.getRepository(Post);
+    const newPost = postRepository.create({ title, description, user });
+    await postRepository.save(newPost);
+    res.status(201).json(newPost);
+  } catch (error) {
+    console.error("Error creating a new post", error);
+    return res.status(500).json({ message: "Error creating post" });
+  }
 });
 
 const PORT = process.env.PORT || 3000;
